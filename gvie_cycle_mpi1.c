@@ -5,6 +5,7 @@
 #include <time.h>
 #include <sys/time.h>
 #include <locale.h>
+#include <mpi.h>
 
 #include "functions.h"
 
@@ -14,7 +15,19 @@
 /* longueur cycle recherche de cycle (-1) */
 #define LONGCYCLE 51
 
+// On definit le process racine
+#define ROOT 0
+
 int main(int argc, char* argv[argc+1]) {
+
+  // ***** Initialisation de l'environnement MPI *****
+  MPI_Init(NULL, NULL);
+  int world_size, world_rank;
+  MPI_Comm_size(MPI_COMM_WORLD, &world_size);
+  MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
+  // ***** Initialisation de l'environnement MPI *****
+
+
   setlocale(LC_ALL, "");
   struct timeval tv_init, tv_end;
 
@@ -29,8 +42,22 @@ int main(int argc, char* argv[argc+1]) {
   case 0:;
   }
 
+  // ***** Affectation des lignes par process *****
+  if (world_rank == ROOT && hm%world_size != 0) {
+    printf("On doit avoir %zu = \"k\" * %d\n", hm, world_size);
+    MPI_Abort(MPI_COMM_WORLD, 1);
+  }
+  MPI_Barrier(MPI_COMM_WORLD);
+
+  int lines = hm/world_size;
+  int offset = lines*world_rank;
+
+  printf("[%d] Lignes de %d à %d\n", world_rank, offset, lines*offset-1);
+  // ***** Affectation des lignes par process *****
+
   // allocation dynamique sinon stack overflow...
   char (*tt)[hm][lm] = calloc(sizeof(char[hm][lm]), LONGCYCLE);  // tableau de tableaux
+  int cycle, localCycle;
 
   /* initialisation du premier tableau */
   init(hm, lm, tt[0]);
@@ -39,11 +66,21 @@ int main(int argc, char* argv[argc+1]) {
 
   for (size_t i=0 ; i<ITER ; i++) {
     /* calcul du nouveau tableau i+1 en fonction du tableau i */
-    calcnouv(hm, lm, tt[i%LONGCYCLE], tt[(i+1)%LONGCYCLE], 0, hm);
+    calcnouv(hm, lm, tt[i%LONGCYCLE], tt[(i+1)%LONGCYCLE], offset, lines);
 
     /* comparaison du nouveau tableau avec les (LONGCYCLE-1) précédents */
     for (size_t j=LONGCYCLE-1; j>0; j--)
-      if (egal(hm, lm, tt[(i+1)%LONGCYCLE], tt[(i+1+j)%LONGCYCLE], 0, hm)) {
+    {
+      if (egal(hm, lm, tt[(i+1)%LONGCYCLE], tt[(i+1+j)%LONGCYCLE], offset, lines)) {
+        localCycle = 1;
+      }
+      else {
+        localCycle = 0;
+      }
+      MPI_Reduce( &localCycle, &cycle, 1, MPI_INT, MPI_PROD, ROOT, MPI_COMM_WORLD );
+
+      if (world_rank == ROOT && cycle)
+      {
         // on a trouvé le tableau identique !
         gettimeofday(&tv_end, 0);
         printf("Cycle trouvé : iteration %zu, longueur %zu\n",
@@ -52,6 +89,7 @@ int main(int argc, char* argv[argc+1]) {
         printf("Calcul : %lfs.\n", DIFFTEMPS(tv_init,tv_end));
         goto CLEANUP;
       }
+    }
   }
 
   gettimeofday(&tv_end, 0);
@@ -60,5 +98,7 @@ int main(int argc, char* argv[argc+1]) {
 
  CLEANUP:
   free(tt);
+  MPI_Abort(MPI_COMM_WORLD, 0);
+  MPI_Finalize();
   return EXIT_SUCCESS;
 }
