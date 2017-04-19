@@ -52,12 +52,12 @@ int main(int argc, char* argv[argc+1]) {
   int lines = hm/world_size;
   int offset = lines*world_rank;
 
-  printf("[%d] Lignes de %d à %d\n", world_rank, offset, lines*offset-1);
+  printf("[%d] Lignes de %d à %d\n", world_rank, offset, lines+offset-1);
   // ***** Affectation des lignes par process *****
 
   // allocation dynamique sinon stack overflow...
   char (*tt)[hm][lm] = calloc(sizeof(char[hm][lm]), LONGCYCLE);  // tableau de tableaux
-  int cycle, localCycle;
+  int localCycle = 0;
 
   /* initialisation du premier tableau */
   init(hm, lm, tt[0]);
@@ -73,20 +73,24 @@ int main(int argc, char* argv[argc+1]) {
     {
       if (egal(hm, lm, tt[(i+1)%LONGCYCLE], tt[(i+1+j)%LONGCYCLE], offset, lines)) {
         localCycle = 1;
+        //printf("[%d] cycle local\n", world_rank);
       }
       else {
         localCycle = 0;
       }
-      MPI_Reduce( &localCycle, &cycle, 1, MPI_INT, MPI_PROD, ROOT, MPI_COMM_WORLD );
 
-      if (world_rank == ROOT && cycle)
+      if (localCycle == 1)
       {
-        // on a trouvé le tableau identique !
-        gettimeofday(&tv_end, 0);
-        printf("Cycle trouvé : iteration %zu, longueur %zu\n",
-                i+1-(LONGCYCLE-j),
-                LONGCYCLE-j);
-        printf("Calcul : %lfs.\n", DIFFTEMPS(tv_init,tv_end));
+        MPI_Barrier(MPI_COMM_WORLD);
+        if (world_rank == ROOT)
+        {
+            // on a trouvé le tableau identique !
+          gettimeofday(&tv_end, 0);
+          printf("Cycle trouvé : iteration %zu, longueur %zu\n",
+                  i+1-(LONGCYCLE-j),
+                  LONGCYCLE-j);
+          printf("Calcul : %lfs.\n", DIFFTEMPS(tv_init,tv_end));
+        }
         goto CLEANUP;
       }
     }
@@ -98,7 +102,6 @@ int main(int argc, char* argv[argc+1]) {
 
  CLEANUP:
   free(tt);
-  MPI_Abort(MPI_COMM_WORLD, 0);
   MPI_Finalize();
   return EXIT_SUCCESS;
 }
