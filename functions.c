@@ -141,3 +141,35 @@ bool egal(size_t hm, size_t lm, char a[hm][lm], char b[hm][lm], size_t offset, s
         return false;  /* si on trouve une différence on s'arrête */
   return true;         /* les deux tableaux sont identiques */
 }
+
+
+// calcul le PPCM entre deux entiers
+int ppcm(int x,int y) {
+  int a=x;
+  int b=y;
+  if (a == 0 || b == 0)
+    return 0;
+  while (a!=b)
+  {
+    while (a>b) b=b+y;
+    while (a<b) a=a+x;
+  }
+  return a;
+}
+
+// calcul le PPCM pour un tableau
+int ppcm_tab(int tab[], int n) {
+  int a = tab[0];
+  int ret = 0;
+  for (size_t i=1;i<n;i++) {
+    ret = ppcm(a,tab[i]);
+    a = ret;
+  }
+  return ret;
+}
+
+void ppcm_op( int * in, int * out, int *len, MPI_Datatype *dtype) {
+  for (size_t i=0; i< *len; i++) {
+    out[i] = ppcm(out[i], in[i]);
+  }
+}

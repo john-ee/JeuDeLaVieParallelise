@@ -3,6 +3,7 @@
 
 #include <stddef.h>
 #include <stdbool.h>
+#include <mpi.h>
 
 #define CARRE 3
 #define INTER 0
@@ -16,5 +17,8 @@ void init(size_t hm, size_t lm, char[hm][lm]);
 void calcnouv(size_t hm, size_t lm, char[hm][lm], char[hm][lm], size_t offset, size_t lines);
 void affiche(size_t hm, size_t lm, char[hm][lm]);
 bool egal(size_t hm, size_t lm, char[hm][lm], char[hm][lm], size_t offset, size_t lines);
+int ppcm(int x, int y);
+int ppcm_tab(int tab[], int n);
+void ppcm_op( int * in, int * out, int *len, MPI_Datatype *dtype);
 
 #endif

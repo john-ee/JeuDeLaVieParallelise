@@ -1,3 +1,4 @@
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
@@ -56,9 +57,14 @@ int main(int argc, char* argv[argc+1]) {
 
   // allocation dynamique sinon stack overflow...
   char (*tt)[hm][lm] = calloc(sizeof(char[hm][lm]), LONGCYCLE);  // tableau de tableaux
+  int localCycle = 0;
+  int value = 0;
+  int finalValue = 0;
 
   /* initialisation du premier tableau */
   init(hm, lm, tt[0]);
+  MPI_Op MyOp;
+  MPI_Op_create(ppcm_op, 1, &MyOp);
 
   gettimeofday(&tv_init, 0);
 
@@ -70,16 +76,27 @@ int main(int argc, char* argv[argc+1]) {
     for (size_t j=LONGCYCLE-1; j>0; j--)
     {
       if (egal(hm, lm, tt[(i+1)%LONGCYCLE], tt[(i+1+j)%LONGCYCLE], offset, lines)) {
-        // ***** On attend que chaque process finit et on finalize *****
-        MPI_Barrier(MPI_COMM_WORLD);
-        gettimeofday(&tv_end, 0);
-        printf("[%d] Cycle trouvé : iteration %zu, longueur %zu\n",
-                world_rank,
-                i+1-(LONGCYCLE-j),
-                LONGCYCLE-j);
-        printf("[%d] Calcul : %lfs.\n", world_rank, DIFFTEMPS(tv_init,tv_end));
+        localCycle = 1;
+        value = i+1-(LONGCYCLE-j);
+        MPI_Reduce(&value, &finalValue, 1, MPI_INT, MyOp, ROOT, MPI_COMM_WORLD);
+      }
+      else {
+        localCycle = 0;
+      }
+
+      if (localCycle)
+      {
+        if (world_rank == ROOT)
+        {
+          // On attend les autres process
+          gettimeofday(&tv_end, 0);
+          printf("[%d] Cycle trouvé : iteration %d, longueur %zu\n",
+                  world_rank,
+                  finalValue,
+                  LONGCYCLE-j);
+          printf("Calcul : %lfs.\n", DIFFTEMPS(tv_init,tv_end));
+        }
         goto CLEANUP;
-        // ***** On attend que chaque process finit et on finalize *****
       }
     }
   }

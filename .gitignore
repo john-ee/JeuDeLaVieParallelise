@@ -3,5 +3,7 @@
 gvie
 gvie_cycle
 gvie_cycle_mpi1
+gvie_cycle_mpi2
+gvie_cycle_mpi3
 mpi_jason.c
 rapport.txt
