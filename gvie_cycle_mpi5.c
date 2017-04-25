@@ -72,9 +72,11 @@ int main(int argc, char* argv[argc+1]) {
 
   for (size_t i=0 ; i<ITER ; i++) {
     /* calcul du nouveau tableau i+1 en fonction du tableau i */
-    MPI_Isend(tt[(i+1)%LONGCYCLE], hm*lm, MPI_CHAR, partner_up, 0, MPI_COMM_WORLD, &req);
+    MPI_Isend(tt[(i+1)%LONGCYCLE][offset], lines*lm, MPI_CHAR, partner_up, 0, MPI_COMM_WORLD, &req);
+    //MPI_Isend(tt[(i+1)%LONGCYCLE], hm*lm, MPI_CHAR, partner_up, 0, MPI_COMM_WORLD, &req);
     calcnouv(hm, lm, tt[i%LONGCYCLE], tt[(i+1)%LONGCYCLE], offset+1, lines-1);
-    MPI_Recv(tt[(i+1)%LONGCYCLE], hm*lm, MPI_CHAR, partner_down, 0, MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+    MPI_Recv(tt[(i+1)%LONGCYCLE][lines*partner_up], lines*lm, MPI_CHAR, partner_down, 0, MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+    //MPI_Recv(tt[(i+1)%LONGCYCLE], hm*lm, MPI_CHAR, partner_down, 0, MPI_COMM_WORLD,MPI_STATUS_IGNORE);
     calcnouv(hm, lm, tt[i%LONGCYCLE], tt[(i+1)%LONGCYCLE], offset, 1);
     calcnouv(hm, lm, tt[i%LONGCYCLE], tt[(i+1)%LONGCYCLE], offset+lines, 1);
 
