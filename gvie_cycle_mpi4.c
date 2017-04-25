@@ -73,13 +73,13 @@ int main(int argc, char* argv[argc+1]) {
     /* calcul du nouveau tableau i+1 en fonction du tableau i */
     if (world_rank == ROOT) {
       calcnouv(hm, lm, tt[i%LONGCYCLE], tt[(i+1)%LONGCYCLE], offset, lines);
-      MPI_Ssend(tt[(i+1)%LONGCYCLE][0], lines*lm, MPI_CHAR, partner_up, 0, MPI_COMM_WORLD);
-      MPI_Recv(tt[(i+1)%LONGCYCLE][(world_size-1)*offset], lines*lm, MPI_CHAR, partner_down, 0, MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+      MPI_Ssend(tt[(i+1)%LONGCYCLE], hm*lm, MPI_CHAR, partner_up, 0, MPI_COMM_WORLD);
+      MPI_Recv(tt[(i+1)%LONGCYCLE], hm*lm, MPI_CHAR, partner_down, 0, MPI_COMM_WORLD,MPI_STATUS_IGNORE);
     }
     else {
-      MPI_Recv(tt[(i+1)%LONGCYCLE][offset-lines], lines*lm, MPI_CHAR, partner_down, 0, MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+      MPI_Recv(tt[(i+1)%LONGCYCLE], hm*lm, MPI_CHAR, partner_down, 0, MPI_COMM_WORLD,MPI_STATUS_IGNORE);
       calcnouv(hm, lm, tt[i%LONGCYCLE], tt[(i+1)%LONGCYCLE], offset, lines);
-      MPI_Ssend(tt[(i+1)%LONGCYCLE][offset], lines*lm, MPI_CHAR, partner_up, 0, MPI_COMM_WORLD);
+      MPI_Ssend(tt[(i+1)%LONGCYCLE], hm*lm, MPI_CHAR, partner_up, 0, MPI_COMM_WORLD);
     }
     /* comparaison du nouveau tableau avec les (LONGCYCLE-1) précédents */
     value=0;
