@@ -66,21 +66,18 @@ int main(int argc, char* argv[argc+1]) {
   init(hm, lm, tt[0]);
   MPI_Op MyOp;
   MPI_Op_create(ppcm_op, 1, &MyOp);
+  MPI_Request req;
 
   gettimeofday(&tv_init, 0);
 
   for (size_t i=0 ; i<ITER ; i++) {
     /* calcul du nouveau tableau i+1 en fonction du tableau i */
-    if (world_rank == ROOT) {
-      calcnouv(hm, lm, tt[i%LONGCYCLE], tt[(i+1)%LONGCYCLE], offset, lines);
-      MPI_Ssend(tt[(i+1)%LONGCYCLE][0], lines*lm, MPI_CHAR, partner_up, 0, MPI_COMM_WORLD);
-      MPI_Recv(tt[(i+1)%LONGCYCLE][(world_size-1)*offset], lines*lm, MPI_CHAR, partner_down, 0, MPI_COMM_WORLD,MPI_STATUS_IGNORE);
-    }
-    else {
-      MPI_Recv(tt[(i+1)%LONGCYCLE][offset-lines], lines*lm, MPI_CHAR, partner_down, 0, MPI_COMM_WORLD,MPI_STATUS_IGNORE);
-      calcnouv(hm, lm, tt[i%LONGCYCLE], tt[(i+1)%LONGCYCLE], offset, lines);
-      MPI_Ssend(tt[(i+1)%LONGCYCLE][offset], lines*lm, MPI_CHAR, partner_up, 0, MPI_COMM_WORLD);
-    }
+    MPI_Isend(tt[(i+1)%LONGCYCLE], hm*lm, MPI_CHAR, partner_up, 0, MPI_COMM_WORLD, &req);
+    calcnouv(hm, lm, tt[i%LONGCYCLE], tt[(i+1)%LONGCYCLE], offset+1, lines-1);
+    MPI_Recv(tt[(i+1)%LONGCYCLE], hm*lm, MPI_CHAR, partner_down, 0, MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+    calcnouv(hm, lm, tt[i%LONGCYCLE], tt[(i+1)%LONGCYCLE], offset, 1);
+    calcnouv(hm, lm, tt[i%LONGCYCLE], tt[(i+1)%LONGCYCLE], offset+lines, 1);
+
     /* comparaison du nouveau tableau avec les (LONGCYCLE-1) précédents */
     value=0;
     for (size_t j=LONGCYCLE-1; j>0; j--)
