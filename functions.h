@@ -19,6 +19,6 @@ void affiche(size_t hm, size_t lm, char[hm][lm]);
 bool egal(size_t hm, size_t lm, char[hm][lm], char[hm][lm], size_t offset, size_t lines);
 int ppcm(int x, int y);
 int ppcm_tab(int tab[], int n);
-void ppcm_op( int * in, int * out, int *len, MPI_Datatype *dtype);
+void ppcm_op( void * in, void * out, int *len, MPI_Datatype *dtype);
 
 #endif

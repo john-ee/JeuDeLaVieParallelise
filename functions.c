@@ -168,8 +168,21 @@ int ppcm_tab(int tab[], int n) {
   return ret;
 }
 
-void ppcm_op( int * in, int * out, int *len, MPI_Datatype *dtype) {
+/*void ppcm_op( void * in, void * out, int *len, MPI_Datatype *dtype) {
+  int *a = (int) in;
+  int *b = (int) out;
   for (size_t i=0; i< *len; i++) {
-    out[i] = ppcm(out[i], in[i]);
+    //a = (int) (in[i]);
+    //b = (int) (out[i]);
+    out[i] = ppcm(a[i], b[i]);
+  }
+}
+*/
+
+void ppcm_op( void * in, void * out, int *len, MPI_Datatype *dtype) {
+int *a = (int*)in, *b = (int*)out;
+  for (size_t i=0; i< *len; i++) {
+    *b= ppcm(*a,* b);
+   ++a; b++;
   }
 }
