@@ -59,6 +59,7 @@ int main(int argc, char* argv[argc+1]) {
   char (*tt)[hm][lm] = calloc(sizeof(char[hm][lm]), LONGCYCLE);  // tableau de tableaux
   int value = 0;
   int finalValue = 0;
+  int kill = 0;
 
   /* initialisation du premier tableau */
   init(hm, lm, tt[0]);
@@ -89,8 +90,11 @@ int main(int argc, char* argv[argc+1]) {
               world_rank,
               finalValue);
       printf("Calcul : %lfs.\n", DIFFTEMPS(tv_init,tv_end));
-      goto CLEANUP;
+      kill = 1;
     }
+    MPI_Bcast(&kill, 1, MPI_INT, ROOT, MPI_COMM_WORLD);
+    if (kill)
+      goto CLEANUP;
   }
 
   gettimeofday(&tv_end, 0);
@@ -99,6 +103,6 @@ int main(int argc, char* argv[argc+1]) {
 
  CLEANUP:
   free(tt);
-  MPI_Abort(MPI_COMM_WORLD, 0);
+  MPI_Finalize();
   return EXIT_SUCCESS;
 }
